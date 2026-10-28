@@ -1,0 +1,14 @@
+{
+  "owners": [
+    {
+      "slug": "maestrati",
+      "greeting": "Agnès et Augustin",
+      "output": "index.html",
+      "properties": [
+        {"id":"bouvier","name":"Le Loft d'Artiste","short":"Bouvier","address":"Rue Bouvier, Paris 11e · Bastille",
+         "platforms":"Airbnb · Booking.com","since":"2026-06-01","lodgify_property_id":809294,
+         "recaps":"data/recaps-bouvier.enc","market":"data/market.json","adr":{"30":257,"365":221}}
+      ]
+    }
+  ]
+}
