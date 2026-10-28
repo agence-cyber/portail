@@ -3,7 +3,6 @@
 
 Variables d'environnement attendues (jamais écrites dans le dépôt) :
   LODGIFY_KEY   clé API Lodgify
-  DATA_KEY      clé hexadécimale (32 octets) qui chiffre les fichiers data/*.enc
   AURORA_PIN    code d'accès du propriétaire (chiffre la page publiée)
 
 Commandes :
@@ -25,7 +24,9 @@ def env(name):
     return v
 
 # ---------- fichiers chiffrés (données propriétaires, dépôt public) ----------
-def _k(): return bytes.fromhex(env('DATA_KEY'))
+def _k():
+    # clé dérivée du code d'accès du propriétaire (même niveau de protection que la page publiée)
+    return hashlib.pbkdf2_hmac('sha256',env('AURORA_PIN').encode(),b'aurora-portail-data-v1',300000,dklen=32)
 def enc_write(path,obj):
     iv=os.urandom(12); ct=AESGCM(_k()).encrypt(iv,json.dumps(obj,ensure_ascii=False).encode(),None)
     open(os.path.join(ROOT,path),'w').write(json.dumps({"iv":base64.b64encode(iv).decode(),"data":base64.b64encode(ct).decode()}))
