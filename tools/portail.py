@@ -121,7 +121,13 @@ def build_property(cfg,lg_rows):
     stays.sort(key=lambda s:s["checkout"])
     market=None; mp=os.path.join(ROOT,cfg.get('market') or '')
     if cfg.get('market') and os.path.exists(mp): market=json.load(open(mp))
-    return {k:cfg[k] for k in ("id","name","short","address","platforms","since","adr")}|{"cap":cfg.get("cap"),"payouts":cfg.get("payouts",True),"ical":ical,"stays":stays,"market":market}
+    adr=cfg.get("adr"); pl=os.path.join(ROOT,'data',f"pricelabs-{cfg['id']}.json")
+    if os.path.exists(pl):
+        # rafraîchi par la tâche du matin via le connecteur PriceLabs : {"updated":"AAAA-MM-JJ","adr":{"30":..,"365":..},"market":[{"l":..,"v":..,"m":..},...]}
+        d=json.load(open(pl))
+        if d.get("adr"): adr=d["adr"]
+        if cfg.get("market") and d.get("market"): market=d["market"]
+    return {k:cfg[k] for k in ("id","name","short","address","platforms","since")}|{"adr":adr,"cap":cfg.get("cap"),"payouts":cfg.get("payouts",True),"ical":ical,"stays":stays,"market":market}
 
 def build_cmd():
     pin=env('AURORA_PIN'); allb=lodgify_all(); print(len(allb),"réservations Lodgify lues")
