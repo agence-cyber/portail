@@ -1,14 +1,43 @@
 {
-  "owners": [
+ "owners": [
+  {
+   "slug": "maestrati",
+   "greeting": "Agnès et Augustin",
+   "output": "index.html",
+   "properties": [
     {
-      "slug": "maestrati",
-      "greeting": "Agnès et Augustin",
-      "output": "index.html",
-      "properties": [
-        {"id":"bouvier","name":"Le Loft d'Artiste","short":"Bouvier","address":"Rue Bouvier, Paris 11e · Bastille",
-         "platforms":"Airbnb · Booking.com","since":"2026-06-01","lodgify_property_id":809294,
-         "recaps":"data/recaps-bouvier.enc","market":"data/market.json","adr":{"30":257,"365":221}}
-      ]
+     "id": "bouvier",
+     "name": "Le Loft d'Artiste",
+     "short": "Bouvier",
+     "address": "Rue Bouvier, Paris 11e · Bastille",
+     "platforms": "Airbnb · Booking.com",
+     "since": "2026-06-01",
+     "lodgify_property_id": 809294,
+     "recaps": "data/recaps-bouvier.enc",
+     "market": "data/market.json",
+     "adr": {
+      "30": 257,
+      "365": 221
+     }
+    },
+    {
+     "id": "louis",
+     "name": "L'Appartement de Louis",
+     "short": "Louis",
+     "address": "9 place Saint-André-des-Arts, Paris 6e · Quartier Latin",
+     "platforms": "Airbnb · Booking.com",
+     "since": "2025-03-01",
+     "lodgify_property_id": 649300,
+     "recaps": "data/recaps-louis.enc",
+     "market": null,
+     "adr": {
+      "30": 966,
+      "365": 633
+     },
+     "cap": 90,
+     "payouts": false
     }
-  ]
+   ]
+  }
+ ]
 }

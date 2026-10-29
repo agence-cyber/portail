@@ -262,7 +262,7 @@ h3{font-family:var(--serif);font-weight:400;font-size:22px;color:var(--bronze);m
   <h2 id="r-name"></h2>
   <div class="perrow"><div class="seg" id="rseg"></div></div>
   <div class="card" style="padding:14px 10px 6px;margin-top:10px" id="rtable"></div>
-  <div class="foot">Montants versés au propriétaire, hors frais de service voyageur. Le relevé PDF signé est adressé par Aurora sur simple demande.<br>Aurora Conciergerie · agence@auroraconciergerie.com<p class="ey">Strictement privé et confidentiel</p></div>
+  <div class="foot" id="r-foot">Montants versés au propriétaire, hors frais de service voyageur. Le relevé PDF signé est adressé par Aurora sur simple demande.<br>Aurora Conciergerie · agence@auroraconciergerie.com<p class="ey">Strictement privé et confidentiel</p></div>
 </section>
 
 </main>
@@ -319,6 +319,8 @@ async function tryPin(pin,remember){
 
 /* ---------- helpers ---------- */
 function P(id){return DATA.properties.find(p=>p.id===id)}
+const noPay=p=>p.payouts===false;
+function capInfo(p){if(!p.cap)return null;const y=TODAY.slice(0,4);const used=[...bookedDays(p,y+'-01-01',(+y+1)+'-01-01')].length;return {y,used,cap:p.cap,left:Math.max(0,p.cap-used)}}
 function bookedDays(p,from,to){ // set of yyyy-mm-dd nights in [from,to)
   const s=new Set();
   p.ical.forEach(e=>{let d=s2d(e.start);const end=s2d(e.end);while(d<end){const k=d2s(d);if(k>=from&&k<to)s.add(k);d=new Date(d.getTime()+MS)}});
@@ -366,13 +368,13 @@ function renderHome(){
   document.getElementById('hello').textContent='Bonjour '+DATA.owner;
   const pr=period('month',0);
   let tot='';
-  if(DATA.properties.length>1){const ks=DATA.properties.map(p=>kpiFor(p,pr.from,pr.to));const pay=ks.reduce((a,k)=>a+k.payout,0);const bk=ks.reduce((a,k)=>a+k.booked,0),dy=ks.reduce((a,k)=>a+k.days,0);const yr=period('year',0);const ky=DATA.properties.map(p=>kpiFor(p,yr.from,yr.to)).reduce((a,k)=>a+k.payout,0);
-    tot=`<div class="card kpi wide" style="margin-bottom:14px"><p class="ey">Tous vos biens · ${pr.label}</p><div class="v">${eur(pay)}</div><div class="c">${DATA.properties.length} biens · occupation ${dy?Math.round(bk/dy*100):0} % · ${eur(ky)} versés en ${yr.label}</div></div>`;}
+  if(DATA.properties.length>1){const ks=DATA.properties.map(p=>kpiFor(p,pr.from,pr.to));const bk=ks.reduce((a,k)=>a+k.booked,0),dy=ks.reduce((a,k)=>a+k.days,0),fu=ks.reduce((a,k)=>a+k.future,0),st=ks.reduce((a,k)=>a+k.stays,0);
+    tot=`<div class="card kpi wide" style="margin-bottom:14px"><p class="ey">Tous vos biens · ${pr.label}</p><div class="v" style="display:flex;align-items:baseline;gap:10px">${bk+fu}<span style="font-size:13px;font-family:Montserrat;letter-spacing:.14em;text-transform:uppercase;color:var(--bronze)">nuits réservées</span></div><div class="c">${DATA.properties.length} biens · occupation ${dy?Math.round(bk/dy*100):0} % à ce jour · ${st} séjour${st>1?'s':''} terminé${st>1?'s':''}${fu?' · '+fu+' nuit'+(fu>1?'s':'')+' encore à venir':''}</div></div>`;}
   document.getElementById('props').innerHTML=tot+DATA.properties.map(p=>{
     const k=kpiFor(p,pr.from,pr.to); const nx=p.ical.filter(e=>e.end>TODAY).sort((a,b)=>a.start<b.start?-1:1)[0];
     const now=p.ical.find(e=>e.start<=TODAY&&e.end>TODAY);
     return `<button class="prop" onclick="go('kpi','${p.id}')"><div class="r1"><div><div class="nm">${p.name}</div><div class="ad">${p.address}</div></div><svg class="chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M9 6l6 6-6 6"/></svg></div>
-    <div class="kp"><div><b>${eur(k.payout)}</b><span>versé ce mois</span></div><div><b>${Math.round(k.occ*100)}<sup style="font-size:13px">%</sup></b><span>occupation</span></div><div><b>${now?'Occupé':(nx?fdate(nx.start):'Libre')}</b><span>${now?'départ le '+fdate(now.end):'prochaine arrivée'}</span></div></div></button>`;
+    <div class="kp"><div><b>${noPay(p)?eur(k.gross):eur(k.payout)}</b><span>${noPay(p)?'loyers bruts ce mois':'versé ce mois'}</span></div><div><b>${Math.round(k.occ*100)}<sup style="font-size:13px">%</sup></b><span>occupation</span></div><div><b>${now?'Occupé':(nx?fdate(nx.start):'Libre')}</b><span>${now?'départ le '+fdate(now.end):'prochaine arrivée'}</span></div></div></button>`;
   }).join('');
 }
 
@@ -392,11 +394,11 @@ function renderKpi(){
   if(!adrV&&p.adr){const w=(G==='week'||G==='month')?30:365;adrV=p.adr[w];adrC='Tarif moyen constaté · '+(w===30?'30 derniers jours':'12 derniers mois');}
   const sinceNote=(p.since&&pr.from<p.since)?' · depuis le '+fdate(p.since):'';
   document.getElementById('kpis').innerHTML=`
-  <div class="card kpi wide"><p class="ey">Versement propriétaire</p><div class="v">${eur(k.payout)}</div><div class="c">${k.stays} séjour${k.stays>1?'s':''} terminé${k.stays>1?'s':''} · ${k.n} nuit${k.n>1?'s':''}${k.future?' · '+k.future+' nuit'+(k.future>1?'s':'')+' encore à venir':''}</div></div>
+  <div class="card kpi wide"><p class="ey">${noPay(p)?'Loyers bruts':'Versement propriétaire'}</p><div class="v">${noPay(p)?eur(k.gross):eur(k.payout)}</div><div class="c">${k.stays} séjour${k.stays>1?'s':''} terminé${k.stays>1?'s':''} · ${k.n} nuit${k.n>1?'s':''}${k.future?' · '+k.future+' nuit'+(k.future>1?'s':'')+' encore à venir':''}</div></div>
   <div class="card kpi"><p class="ey">Taux d'occupation</p><div class="v">${Math.round(k.occ*100)}<sup>%</sup></div><div class="c">${k.booked} nuit${k.booked>1?'s':''} sur ${k.days} · ${occLbl}${sinceNote}</div></div>
   <div class="card kpi"><p class="ey">Prix brut moyen par nuit</p><div class="v">${adrV?eur(adrV):'–'}</div><div class="c">${adrC}</div></div>
   <div class="card kpi"><p class="ey">Durée moyenne</p><div class="v">${k.avgLen?k.avgLen.toFixed(1).replace('.',','):'–'}</div><div class="c">nuits par séjour</div></div>
-  <div class="card kpi"><p class="ey">Séjours</p><div class="v">${k.stays}</div><div class="c">terminés sur la période</div></div>`;
+  <div class="card kpi"><p class="ey">Séjours</p><div class="v">${k.stays}</div><div class="c">terminés sur la période</div></div>${(()=>{const c=capInfo(p);return c?`<div class="card kpi wide" style="background:var(--carte);border-color:var(--sable)"><p class="ey">Quota de ${c.cap} nuits · ${c.y}</p><div class="v" style="font-size:40px">${c.used}<span style="font-size:22px;opacity:.6"> / ${c.cap}</span></div><div class="c">${c.left} nuit${c.left>1?'s':''} encore disponible${c.left>1?'s':''} cette année · réservations à venir comprises</div><div style="height:6px;border-radius:3px;background:var(--brume);margin-top:10px;overflow:hidden"><div style="height:100%;width:${Math.min(100,c.used/c.cap*100)}%;background:var(--beige)"></div></div></div>`:''})()}`;
   renderChart(p,pr);
   renderMarket(p);
   document.getElementById('upd').textContent='Mis à jour le '+fdateY(DATA.updated);
@@ -405,7 +407,7 @@ function renderChart(p,pr){
   // 12 months ending at the period's end month (or current month)
   const endM = G==='all'||G==='year' ? (G==='year'? s2d(pr.to):s2d(TODAY)) : s2d(pr.to);
   const last=new Date(Date.UTC(endM.getUTCFullYear(),endM.getUTCMonth()-(G==='year'?1:0),1));
-  const months=[];for(let i=11;i>=0;i--){const m=new Date(Date.UTC(last.getUTCFullYear(),last.getUTCMonth()-i,1));const f=d2s(m),t=d2s(new Date(Date.UTC(m.getUTCFullYear(),m.getUTCMonth()+1,1)));const k=kpiFor(p,f,t);months.push({m,f,t,v:k.payout,occ:k.occ,cur:f<=pr.from&&pr.from<t||(G==='year'&&f>=pr.from&&t<=pr.to)});}
+  const months=[];for(let i=11;i>=0;i--){const m=new Date(Date.UTC(last.getUTCFullYear(),last.getUTCMonth()-i,1));const f=d2s(m),t=d2s(new Date(Date.UTC(m.getUTCFullYear(),m.getUTCMonth()+1,1)));const k=kpiFor(p,f,t);months.push({m,f,t,v:noPay(p)?k.gross:k.payout,occ:k.occ,cur:f<=pr.from&&pr.from<t||(G==='year'&&f>=pr.from&&t<=pr.to)});}
   const max=Math.max(1,...months.map(x=>x.v)); const W=680,H=190,pad=8,bw=W/12;
   let s=`<svg viewBox="0 0 ${W} ${H+34}" font-family="Montserrat" font-size="11">`;
   months.forEach((x,i)=>{const h=x.v/max*(H-30);const y=H-h;const c=x.cur?'#C9A97A':(x.f>TODAY?'#7E7676':'#F1E9DE');
@@ -414,7 +416,7 @@ function renderChart(p,pr){
     s+=`<text x="${i*bw+bw/2}" y="${H+16}" text-anchor="middle" fill="#C9A97A" font-size="11">${MOISC[x.m.getUTCMonth()]}</text>`;
     if(x.m.getUTCMonth()===0||i===0)s+=`<text x="${i*bw+bw/2}" y="${H+30}" text-anchor="middle" fill="#9B9292" font-size="10">${x.m.getUTCFullYear()}</text>`;});
   s+='</svg>';
-  document.getElementById('chart').innerHTML=`<div class="ttl"><p class="ey">Versements par mois</p><span class="cap">12 derniers mois</span></div>${s}`;
+  document.getElementById('chart').innerHTML=`<div class="ttl"><p class="ey">${noPay(p)?'Loyers bruts par mois':'Versements par mois'}</p><span class="cap">12 derniers mois</span></div>${s}`;
 }
 function renderMarket(p){
   const m=p.market; if(!m){document.getElementById('mk').style.display='none';return}
@@ -494,7 +496,7 @@ function renderRecaps(){
   all.sort((a,b)=>a.s.checkout<b.s.checkout?1:-1);
   let h='',lastM='';
   all.forEach(({p,s},i)=>{const d=s2d(s.checkout);const m=MOIS[d.getUTCMonth()].replace(/^./,c=>c.toUpperCase())+' '+d.getUTCFullYear();if(m!==lastM){h+=`<div class="mth">${m}</div>`;lastM=m}
-    h+=`<button class="it" onclick="openStay('${p.id}','${s.code}')"><div><div class="g">${s.guest}</div><div class="m">${fdate(s.checkin)} → ${fdateY(s.checkout)} · ${s.nights} nuit${s.nights>1?'s':''}${s.guests?' · '+s.guests+' voyageur'+(s.guests>1?'s':''):''}${DATA.properties.length>1?' · '+p.short:''}</div></div><div><div class="a">${eur(s.owner_payout)}</div><span class="st">${s.platform||'Airbnb'}</span></div></button>`;});
+    h+=`<button class="it" onclick="openStay('${p.id}','${s.code}')"><div><div class="g">${s.guest}</div><div class="m">${fdate(s.checkin)} → ${fdateY(s.checkout)} · ${s.nights} nuit${s.nights>1?'s':''}${s.guests?' · '+s.guests+' voyageur'+(s.guests>1?'s':''):''}${DATA.properties.length>1?' · '+p.short:''}</div></div><div><div class="a">${s.owner_payout!=null?eur(s.owner_payout):(s.host_gross!=null?eur(s.host_gross):'–')}</div><span class="st">${s.platform||'Airbnb'}</span>${s.owner_payout==null?'<div class="cap" style="font-size:9px;letter-spacing:.1em;text-transform:uppercase;margin-top:4px;text-align:right">brut</div>':''}</div></button>`;});
   document.getElementById('recaps').innerHTML=h||'<p class="cap">Aucun séjour terminé pour le moment.</p>';
 }
 function openStay(pid,code){
@@ -503,7 +505,7 @@ function openStay(pid,code){
   const row=(l,v)=>v!=null&&v!==''?`<div class="dl"><span>${l}</span><span>${v}</span></div>`:'';
   sh.innerHTML=`<div class="hd"></div><button class="shx" aria-label="Fermer" onclick="closeSheet()"><svg viewBox="0 0 24 24"><path d="M6 6l12 12M18 6L6 18"/></svg></button><p class="ey">Récapitulatif de séjour</p><h2 style="margin-bottom:2px">${s.guest}</h2><p class="cap">${p.name}</p>
   <div class="sec">${row('Arrivée',fdateY(s.checkin))}${row('Départ',fdateY(s.checkout))}${row('Nuits',s.nights)}${row('Voyageurs',s.guests)}${row('Plateforme',s.platform||'Airbnb')}${row('Code de confirmation',s.code)}</div>
-  <div class="sec"><p class="ey">Versements</p>${row('Payé par le voyageur',s.guest_paid!=null?eur(s.guest_paid):null)}${row('Versement Aurora Conciergerie',s.aurora_payout!=null?eur(s.aurora_payout):null)}<div class="dl tot"><span>Versement propriétaire</span><span>${eur(s.owner_payout)}</span></div></div>
+  <div class="sec"><p class="ey">${s.owner_payout!=null?'Versements':'Montants'}</p>${s.owner_payout==null&&s.host_gross!=null?row('Loyer brut du séjour',eur(s.host_gross))+row('Soit par nuit',eur(s.host_gross/s.nights)):''}${row('Payé par le voyageur',s.guest_paid!=null?eur(s.guest_paid):null)}${row('Versement Aurora Conciergerie',s.aurora_payout!=null?eur(s.aurora_payout):null)}<div class="dl tot"><span>Versement propriétaire</span><span${s.owner_payout==null?' style="font-size:14px;font-family:Montserrat;font-weight:400;color:var(--pierre)"':''}>${s.owner_payout!=null?eur(s.owner_payout):'Communiqué par relevé'}</span></div></div>
   ${s.pdf?`<div class="sec"><a class="btn o" href="${s.pdf}" target="_blank">Ouvrir le PDF</a></div>`:''}`;
   document.getElementById('sheet').classList.add('on');
 }
@@ -517,13 +519,14 @@ function openEvent(pid,start){
   const status=e.end<=TODAY?'Séjour terminé':(e.start<=TODAY?'Séjour en cours':'Séjour à venir');
   sh.innerHTML=`<div class="hd"></div><button class="shx" aria-label="Fermer" onclick="closeSheet()"><svg viewBox="0 0 24 24"><path d="M6 6l12 12M18 6L6 18"/></svg></button><p class="ey">${status}</p><h2 style="margin-bottom:2px">${guestLabel(e)}</h2><p class="cap">${p.name}</p>
   <div class="sec">${row('Arrivée',fdateY(e.start))}${row('Départ',fdateY(e.end))}${row('Nuits',n)}${row('Voyageurs',e.guests)}${row('Plateforme',e.platform||'Airbnb')}${row('Code de confirmation',e.code)}${e.booked_at?row('Réservé le',fdateY(e.booked_at.slice(0,10))):''}</div>
-  <div class="sec"><p class="ey">Montants</p>${e.stay!=null?row('Loyer brut du séjour',eur(e.stay)):''}${e.stay!=null&&n?row('Soit par nuit',eur(e.stay/n)):''}${e.total!=null?row('Total payé par le voyageur',eur(e.total)):''}<div class="dl tot"><span>Versement propriétaire</span><span style="font-size:14px;font-family:Montserrat;font-weight:400;color:var(--pierre)">${e.end<=TODAY?'En cours de récapitulation':'Communiqué après le départ'}</span></div></div>`;
+  <div class="sec"><p class="ey">Montants</p>${e.stay!=null?row('Loyer brut du séjour',eur(e.stay)):''}${e.stay!=null&&n?row('Soit par nuit',eur(e.stay/n)):''}${e.total!=null?row('Total payé par le voyageur',eur(e.total)):''}<div class="dl tot"><span>Versement propriétaire</span><span style="font-size:14px;font-family:Montserrat;font-weight:400;color:var(--pierre)">${noPay(p)?'Communiqué par relevé':(e.end<=TODAY?'En cours de récapitulation':'Communiqué après le départ')}</span></div></div>`;
   document.getElementById('sheet').classList.add('on');
 }
 function closeSheet(){document.getElementById('sheet').classList.remove('on')}
 /* ---------- report ---------- */
 function renderReport(){
   const p=P(cur); document.getElementById('r-name').textContent=p.name;
+  document.getElementById('r-foot').firstChild.textContent=noPay(p)?'Loyers bruts des séjours (hors frais de service voyageur), avant frais de plateforme et commission Aurora. Les versements sont communiqués par relevé.':'Montants versés au propriétaire, hors frais de service voyageur. Le relevé PDF signé est adressé par Aurora sur simple demande.';
   const years=[...new Set(p.stays.map(s=>s.checkout.slice(0,4)))].sort();
   const seg=document.getElementById('rseg'); if(!years.includes(rSel))rSel=years[years.length-1];
   seg.innerHTML=years.map(y=>`<button data-y="${y}" class="${rSel===y?'on':''}">${y}</button>`).join('');
@@ -531,9 +534,9 @@ function renderReport(){
   let rows='',T={st:0,n:0,g:0,a:0,o:0};
   for(let m=0;m<12;m++){const f=`${rSel}-${String(m+1).padStart(2,'0')}-01`,t=m===11?`${+rSel+1}-01-01`:`${rSel}-${String(m+2).padStart(2,'0')}-01`;const k=kpiFor(p,f,t);if(!k.stays&&f>TODAY)continue;if(!k.stays)continue;
     T.st+=k.stays;T.n+=k.n;T.g+=k.gross;T.o+=k.payout;
-    rows+=`<tr><td>${MOIS[m].replace(/^./,c=>c.toUpperCase())}</td><td class="n" style="font-family:Montserrat;font-size:13px">${k.stays}</td><td class="n" style="font-family:Montserrat;font-size:13px">${k.n}</td><td class="n" style="font-family:Montserrat;font-size:13px">${Math.round(k.occ*100)} %</td><td class="n">${eur(k.payout)}</td></tr>`;}
+    rows+=`<tr><td>${MOIS[m].replace(/^./,c=>c.toUpperCase())}</td><td class="n" style="font-family:Montserrat;font-size:13px">${k.stays}</td><td class="n" style="font-family:Montserrat;font-size:13px">${k.n}</td><td class="n" style="font-family:Montserrat;font-size:13px">${Math.round(k.occ*100)} %</td><td class="n">${noPay(p)?eur(k.gross):eur(k.payout)}</td></tr>`;}
   const ky=kpiFor(p,`${rSel}-01-01`,`${+rSel+1}-01-01`);
-  document.getElementById('rtable').innerHTML=`<table class="tbl"><thead><tr><th>Mois</th><th class="n">Séjours</th><th class="n">Nuits</th><th class="n">Occ.</th><th class="n">Versement</th></tr></thead><tbody>${rows}<tr class="tot"><td>Total ${rSel}</td><td class="n" style="font-family:Montserrat;font-size:13px">${T.st}</td><td class="n" style="font-family:Montserrat;font-size:13px">${T.n}</td><td class="n" style="font-family:Montserrat;font-size:13px">${Math.round(ky.occ*100)} %</td><td class="n">${eur(T.o)}</td></tr></tbody></table>
+  document.getElementById('rtable').innerHTML=`<table class="tbl"><thead><tr><th>Mois</th><th class="n">Séjours</th><th class="n">Nuits</th><th class="n">Occ.</th><th class="n">${noPay(p)?'Brut':'Versement'}</th></tr></thead><tbody>${rows}<tr class="tot"><td>Total ${rSel}</td><td class="n" style="font-family:Montserrat;font-size:13px">${T.st}</td><td class="n" style="font-family:Montserrat;font-size:13px">${T.n}</td><td class="n" style="font-family:Montserrat;font-size:13px">${Math.round(ky.occ*100)} %</td><td class="n">${noPay(p)?eur(T.g):eur(T.o)}</td></tr></tbody></table>
   <p class="cap" style="padding:12px 6px 6px">${p.since&&p.since>`${rSel}-01-01`?'Suivi depuis le '+fdateY(p.since)+' · ':''}Durée moyenne ${ky.avgLen?ky.avgLen.toFixed(1).replace('.',','):'–'} nuits · ${ky.stays} séjours · occupation calculée sur ${ky.days} nuits.</p>`;
 }
 function printReport(){document.getElementById('v-report').classList.add('print');window.print();setTimeout(()=>document.getElementById('v-report').classList.remove('print'),500)}

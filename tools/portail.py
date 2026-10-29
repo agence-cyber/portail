@@ -110,10 +110,18 @@ def build_property(cfg,lg_rows):
         stays.append({"guest":rc["guest_name"],"checkin":rc["checkin"],"checkout":rc["checkout"],"nights":n,"code":rc.get("confirmation_code") or rc["checkin"],
             "guests":rc.get("num_guests"),"guest_paid":rc.get("guest_total_paid"),"owner_payout":rc.get("owner_payout") or 0,
             "aurora_payout":rc.get("aurora_payout"),"host_gross":None,"platform":"Airbnb","pdf":rc.get("pdf_url")})
+    if cfg.get("payouts") is False:
+        # bien sans suivi des versements : les séjours terminés viennent de Lodgify, montants bruts seulement
+        today=datetime.date.today().isoformat(); stays=[]
+        for r in lg:
+            if r["checkout"]>today: continue
+            n=(datetime.date.fromisoformat(r["checkout"])-datetime.date.fromisoformat(r["checkin"])).days
+            stays.append({"guest":r["guest"],"checkin":r["checkin"],"checkout":r["checkout"],"nights":n,"code":r["code"] or f"{r['checkin']}-{r['guest']}",
+                "guests":r["guests"],"guest_paid":r.get("total"),"owner_payout":None,"aurora_payout":None,"host_gross":r.get("stay"),"platform":r["platform"],"pdf":None})
     stays.sort(key=lambda s:s["checkout"])
     market=None; mp=os.path.join(ROOT,cfg.get('market') or '')
     if cfg.get('market') and os.path.exists(mp): market=json.load(open(mp))
-    return {k:cfg[k] for k in ("id","name","short","address","platforms","since","adr")}|{"ical":ical,"stays":stays,"market":market}
+    return {k:cfg[k] for k in ("id","name","short","address","platforms","since","adr")}|{"cap":cfg.get("cap"),"payouts":cfg.get("payouts",True),"ical":ical,"stays":stays,"market":market}
 
 def build_cmd():
     pin=env('AURORA_PIN'); allb=lodgify_all(); print(len(allb),"réservations Lodgify lues")
@@ -126,7 +134,7 @@ def build_cmd():
         ct=AESGCM(key).encrypt(iv,json.dumps(data,ensure_ascii=False).encode(),None)
         enc={"salt":base64.b64encode(salt).decode(),"iv":base64.b64encode(iv).decode(),"iter":ITER,"data":base64.b64encode(ct).decode()}
         open(os.path.join(ROOT,o['output']),'w').write(tpl.replace('__DATA__',json.dumps(enc)))
-        for p in props: print(o['slug'],"/",p['id'],":",len(p['ical']),"réservations,",len(p['stays']),"séjours récapitulés, versements",round(sum(s['owner_payout'] for s in p['stays']),2),"€")
+        for p in props: print(o['slug'],"/",p['id'],":",len(p['ical']),"réservations,",len(p['stays']),"séjours récapitulés, versements",round(sum(s['owner_payout'] or 0 for s in p['stays']),2),"€")
 
 if __name__=='__main__':
     a=sys.argv[1:]
