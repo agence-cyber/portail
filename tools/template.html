@@ -15,7 +15,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;0,600;1,400&family=Montserrat:wght@300;400;500;600&display=swap">
 <style>
-:root{--fond:#3B3A3A;--carte:#4A4747;--carte2:#5E5858;--beige:#F1E9DE;--blanc:#4A4747;--brume:#555151;--creme:#3B3A3A;--sable:rgba(241,233,222,.16);--pierre:#7E7676;--bronze:#C9A97A;--noyer:#F1E9DE;--choco:#2C2B2B;
+:root{--abb:#FF5A5F;--bkg:#1A5DB5;--fond:#3B3A3A;--carte:#4A4747;--carte2:#5E5858;--beige:#F1E9DE;--blanc:#4A4747;--brume:#555151;--creme:#3B3A3A;--sable:rgba(241,233,222,.16);--pierre:#7E7676;--bronze:#C9A97A;--noyer:#F1E9DE;--choco:#2C2B2B;
 --serif:'Cormorant Garamond',Georgia,serif;--sans:Montserrat,system-ui,sans-serif;--sat:env(safe-area-inset-top,0px);--sab:env(safe-area-inset-bottom,0px)}
 *{box-sizing:border-box;-webkit-tap-highlight-color:transparent;touch-action:manipulation}
 html{-webkit-text-size-adjust:100%}
@@ -95,16 +95,20 @@ h3{font-family:var(--serif);font-weight:400;font-size:22px;color:var(--bronze);m
 .cal .mh{display:flex;align-items:center;justify-content:space-between;margin-bottom:8px}
 .cal .mh .t{font-family:var(--serif);font-size:22px}
 .dow{display:grid;grid-template-columns:repeat(7,1fr);font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:var(--bronze);text-align:center;margin-bottom:4px}
-.grid{display:grid;grid-template-columns:repeat(7,1fr);gap:3px}
-.d{aspect-ratio:1;display:flex;align-items:center;justify-content:center;font-size:13px;border-radius:8px;position:relative;color:var(--noyer)}
-.d.o{opacity:.25}
-.d.b{background:var(--beige);color:var(--fond)}
-.d.b.bk{background:var(--bronze);color:var(--fond)}
-.d.b.past{background:var(--pierre);color:var(--beige)}
-.d.ci{border-top-left-radius:999px;border-bottom-left-radius:999px}
-.d.co{border-top-right-radius:999px;border-bottom-right-radius:999px}
-.d.td::after{content:"";position:absolute;bottom:3px;width:4px;height:4px;border-radius:50%;background:var(--bronze)}
-.d.b.td::after{background:var(--fond)}
+.wk{position:relative;margin-top:4px;overflow:hidden}
+.wk .cells{display:grid;grid-template-columns:repeat(7,1fr);gap:3px}
+.d{height:60px;border-radius:10px;background:rgba(241,233,222,.04);border:1px solid rgba(241,233,222,.07);position:relative;font-size:12px;color:var(--beige);padding:5px 0 0;text-align:center}
+.d.o{visibility:hidden}
+.d.b{color:rgba(241,233,222,.45)}
+.d.td{border-color:var(--bronze)}
+.d.td span{display:inline-block;background:var(--bronze);color:var(--fond);border-radius:999px;min-width:20px;height:20px;line-height:20px;font-weight:500;padding:0 4px;margin-top:-2px}
+.wk .bars{position:absolute;left:0;right:0;top:0;bottom:0;pointer-events:none}
+.bar{position:absolute;top:28px;height:28px;background:var(--carte2);border:1.5px solid var(--abb);border-radius:999px;color:var(--beige);font-size:11px;font-weight:500;line-height:25px;padding:0 8px 0 30px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;pointer-events:auto;cursor:pointer;box-shadow:0 2px 6px rgba(0,0,0,.25);text-align:left}
+.bar::before{content:"";position:absolute;left:3px;top:3px;width:19px;height:19px;border-radius:50%;background:var(--abb)}
+.bar.bk{border-color:var(--bkg)}.bar.bk::before{background:var(--bkg)}
+.bar.past{opacity:.5}
+.bar.cl{border-left:0;border-top-left-radius:0;border-bottom-left-radius:0;padding-left:8px}.bar.cl::before{display:none}
+.bar.cr{border-right:0;border-top-right-radius:0;border-bottom-right-radius:0}
 .legend{display:flex;gap:16px;margin-top:10px;font-size:11px;color:var(--beige);opacity:.8}
 .legend i{display:inline-block;width:12px;height:12px;border-radius:4px;vertical-align:-2px;margin-right:5px}
 .strip{margin-top:10px}
@@ -132,10 +136,10 @@ h3{font-family:var(--serif);font-weight:400;font-size:22px;color:var(--bronze);m
 .tldays div.td{color:var(--fond)}
 .tldays div.td b{display:inline-block;background:var(--bronze);border-radius:999px;width:22px;height:22px;line-height:22px;font-weight:500}
 .tlrow{position:relative;height:48px;box-sizing:border-box;border-top:1px solid var(--sable);background:repeating-linear-gradient(90deg,transparent 0 39px,var(--brume) 39px 40px)}
-.tlbar{position:absolute;top:8px;height:32px;border-radius:999px;background:var(--beige);color:var(--fond);font-size:11px;font-weight:500;line-height:32px;padding:0 10px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;border:0;text-align:left}
-.tlbar.bk{background:var(--bronze);color:var(--fond)}
-.tlbar.past{background:var(--pierre);color:var(--beige)}
-.tlbar.now{box-shadow:0 0 0 2px var(--fond) inset}
+.tlbar{position:absolute;top:8px;height:32px;border-radius:999px;background:var(--carte2);border:1.5px solid var(--abb);color:var(--beige);font-size:11px;font-weight:500;line-height:32px;padding:0 10px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;border:0;text-align:left}
+.tlbar.bk{border-color:var(--bkg)}
+.tlbar.past{opacity:.5}
+.tlbar.now{border-width:2.5px;line-height:30px}
 .tlmonths{position:relative;height:18px}
 .tlmonths span{position:absolute;top:2px;font-size:10px;letter-spacing:.12em;text-transform:uppercase;color:var(--bronze);padding-left:6px;border-left:1px solid var(--sable)}
 
@@ -243,7 +247,7 @@ h3{font-family:var(--serif);font-weight:400;font-size:22px;color:var(--bronze);m
   <h2 id="c-name">Tous vos biens</h2>
   <div class="perrow" style="margin-top:8px"><div class="seg" id="calseg"></div></div>
   <div class="card cal" id="calbox"></div>
-  <div class="legend"><span><i style="background:var(--noyer)"></i>Airbnb</span><span><i style="background:var(--bronze)"></i>Booking.com</span><span><i style="background:var(--pierre)"></i>Séjour passé</span></div>
+  <div class="legend"><span><i style="background:var(--abb);border-radius:50%"></i>Airbnb</span><span><i style="background:var(--bkg);border-radius:50%"></i>Booking.com</span><span><i style="background:var(--carte2);border:1px solid var(--pierre);border-radius:50%;opacity:.6"></i>Séjour passé</span></div>
   <div class="mth" style="margin-top:22px">Prochaines arrivées</div>
   <div id="upcoming"></div>
 </section>
@@ -442,17 +446,26 @@ function renderCal(){
     renderTimeline(); return;
   } else {
     const p=P(calSel); document.getElementById('c-name').textContent=p.name;
-    const bd=bookedDays(p,f,t); const ci=new Set(p.ical.map(e=>e.start)); const co=new Set(p.ical.map(e=>d2s(new Date(s2d(e.end).getTime()-MS))));
-    const plat={}; p.ical.forEach(e=>{let d=s2d(e.start);const en=s2d(e.end);while(d<en){plat[d2s(d)]=e.platform||'';d=new Date(d.getTime()+MS)}});
-    h+=`<div class="dow">${['L','M','M','J','V','S','D'].map(x=>'<span>'+x+'</span>').join('')}</div><div class="grid">`;
-    const first=(calMonth.getUTCDay()+6)%7; for(let i=0;i<first;i++)h+='<div class="d o"></div>';
-    const n=nights(f,t);
-    for(let i=0;i<n;i++){const k=d2s(new Date(s2d(f).getTime()+i*MS));const b=bd.has(k);h+=`<div class="d ${b?'b':''} ${b&&/booking/i.test(plat[k]||'')?'bk':''} ${b&&k<TODAY?'past':''} ${ci.has(k)?'ci':''} ${co.has(k)?'co':''} ${k===TODAY?'td':''}">${i+1}</div>`;}
-    h+='</div>';
+    const bd=bookedDays(p,f,t);
+    h+=`<div class="dow">${['L','M','M','J','V','S','D'].map(x=>'<span>'+x+'</span>').join('')}</div>`;
+    const first=(calMonth.getUTCDay()+6)%7; const n=nights(f,t);
+    const cells=[];for(let i=0;i<first;i++)cells.push(null);for(let i=0;i<n;i++)cells.push(d2s(new Date(s2d(f).getTime()+i*MS)));while(cells.length%7)cells.push(null);
+    const evs=p.ical.filter(e=>e.start<t&&e.end>f);
+    for(let w=0;w<cells.length;w+=7){const wk=cells.slice(w,w+7);
+      h+=`<div class="wk"><div class="cells">`+wk.map(k=>k?`<div class="d ${bd.has(k)?'b':''} ${k===TODAY?'td':''}"><span>${+k.slice(8)}</span></div>`:'<div class="d o"></div>').join('')+`</div><div class="bars">`;
+      const wf=wk.find(x=>x), wl=[...wk].reverse().find(x=>x); if(!wf){h+='</div></div>';continue}
+      const wEnd=d2s(new Date(s2d(wl).getTime()+MS));
+      evs.forEach(e=>{if(e.end<=wf||e.start>=wEnd)return;
+        const si=e.start>=wf?wk.indexOf(e.start):0; const startsHere=e.start>=wf;
+        const endsHere=e.end<wEnd; const ei=endsHere?wk.indexOf(e.end):7; // index of checkout day
+        const cw=100/7; const left=si*cw+(startsHere?cw/2:0); const right=endsHere?ei*cw+cw/2:100;
+        const past=e.end<=TODAY, bk=/booking/i.test(e.platform||'');
+        h+=`<button class="bar ${bk?'bk':''} ${past?'past':''} ${startsHere?'':'cl'} ${endsHere?'':'cr'}" style="left:calc(${left}% + ${startsHere?2:0}px);width:calc(${right-left}% - ${(startsHere?2:0)+(endsHere?3:0)}px)" onclick="openEvent('${p.id}','${e.start}')" title="${guestLabel(e)}">${guestLabel(e)}</button>`;});
+      h+='</div></div>';}
   }
   if(calSel!=='all'){const p=P(calSel);const inM=p.ical.filter(e=>e.start<t&&e.end>f).sort((a,b)=>a.start<b.start?-1:1);
     h+=`<div style="margin-top:14px;border-top:1px solid var(--sable);padding-top:6px">`+inM.map(e=>{const nm=e.guest||guestLabel(e);const st=e.end<=TODAY?'past':(e.start<=TODAY?'now':'up');
-      return `<div onclick="openEvent('${p.id}','${e.start}')" style="display:grid;grid-template-columns:auto 1fr auto;gap:10px;align-items:center;padding:9px 0;border-bottom:1px solid var(--sable);font-size:13px;cursor:pointer"><i style="width:10px;height:10px;border-radius:3px;background:${st==='past'?'var(--pierre)':(/booking/i.test(e.platform||'')?'var(--bronze)':'var(--noyer)')}"></i><span><b style="font-weight:500">${nm}</b><br><span class="cap">${fdate(e.start)} → ${fdate(e.end)} · ${nights(e.start,e.end)} nuit${nights(e.start,e.end)>1?'s':''}${e.guests?' · '+e.guests+' voy.':''}</span></span><span class="st ${st==='past'?'up':''}" style="font-size:9px;letter-spacing:.12em;text-transform:uppercase;border-radius:999px;padding:4px 9px;background:${st==='past'?'var(--sable)':'var(--bronze)'};color:${st==='past'?'var(--noyer)':'#fff'}">${e.platform||'Airbnb'}</span></div>`}).join('')+`</div>`;}
+      return `<div onclick="openEvent('${p.id}','${e.start}')" style="display:grid;grid-template-columns:auto 1fr auto;gap:10px;align-items:center;padding:9px 0;border-bottom:1px solid var(--sable);font-size:13px;cursor:pointer"><i style="width:10px;height:10px;border-radius:3px;border-radius:50%;opacity:${st==='past'?'.5':'1'};background:${/booking/i.test(e.platform||'')?'var(--bkg)':'var(--abb)'}"></i><span><b style="font-weight:500">${nm}</b><br><span class="cap">${fdate(e.start)} → ${fdate(e.end)} · ${nights(e.start,e.end)} nuit${nights(e.start,e.end)>1?'s':''}${e.guests?' · '+e.guests+' voy.':''}</span></span><span class="st ${st==='past'?'up':''}" style="font-size:9px;letter-spacing:.12em;text-transform:uppercase;border-radius:999px;padding:4px 9px;background:${st==='past'?'var(--sable)':'var(--bronze)'};color:${st==='past'?'var(--noyer)':'#fff'}">${e.platform||'Airbnb'}</span></div>`}).join('')+`</div>`;}
   box.innerHTML=h;
   document.getElementById('cprev').onclick=()=>{calMonth=new Date(Date.UTC(calMonth.getUTCFullYear(),calMonth.getUTCMonth()-1,1));renderCal()};
   document.getElementById('cnext').onclick=()=>{calMonth=nxt;renderCal()};
