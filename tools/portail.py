@@ -4,6 +4,7 @@
 Variables d'environnement attendues (jamais écrites dans le dépôt) :
   LODGIFY_KEY   clé API Lodgify
   AURORA_PIN    code d'accès du propriétaire (chiffre la page publiée)
+  AURORA_PIN_<SLUG>  code d'un propriétaire donné (ex. AURORA_PIN_DILLI) ; à défaut AURORA_PIN
 
 Commandes :
   python tools/portail.py recaps list   <bien>              liste les récaps enregistrés
@@ -24,26 +25,28 @@ def env(name):
     return v
 
 # ---------- fichiers chiffrés (données propriétaires, dépôt public) ----------
-def _k():
+def owner_pin(o):
+    return os.environ.get('AURORA_PIN_'+o['slug'].upper()) or env('AURORA_PIN')
+def _k(pin):
     # clé dérivée du code d'accès du propriétaire (même niveau de protection que la page publiée)
-    return hashlib.pbkdf2_hmac('sha256',env('AURORA_PIN').encode(),b'aurora-portail-data-v1',300000,dklen=32)
-def enc_write(path,obj):
-    iv=os.urandom(12); ct=AESGCM(_k()).encrypt(iv,json.dumps(obj,ensure_ascii=False).encode(),None)
+    return hashlib.pbkdf2_hmac('sha256',pin.encode(),b'aurora-portail-data-v1',300000,dklen=32)
+def enc_write(path,obj,pin):
+    iv=os.urandom(12); ct=AESGCM(_k(pin)).encrypt(iv,json.dumps(obj,ensure_ascii=False).encode(),None)
     open(os.path.join(ROOT,path),'w').write(json.dumps({"iv":base64.b64encode(iv).decode(),"data":base64.b64encode(ct).decode()}))
-def enc_read(path,default=None):
+def enc_read(path,pin,default=None):
     p=os.path.join(ROOT,path)
     if not os.path.exists(p): return default
-    d=json.load(open(p)); return json.loads(AESGCM(_k()).decrypt(base64.b64decode(d['iv']),base64.b64decode(d['data']),None))
+    d=json.load(open(p)); return json.loads(AESGCM(_k(pin)).decrypt(base64.b64decode(d['iv']),base64.b64decode(d['data']),None))
 
 def prop(pid):
     for o in CFG['owners']:
         for p in o['properties']:
-            if p['id']==pid: return p
+            if p['id']==pid: return o,p
     sys.exit(f"bien inconnu : {pid}")
 
 # ---------- récaps (versement propriétaire par séjour) ----------
 def recaps_cmd(args):
-    sub,pid=args[0],args[1]; p=prop(pid); rows=enc_read(p['recaps'],[])
+    sub,pid=args[0],args[1]; o,p=prop(pid); pin=owner_pin(o); rows=enc_read(p['recaps'],pin,[])
     if sub=='list':
         for r in sorted(rows,key=lambda r:r['checkin']): print(r['checkin'],r['checkout'],r.get('confirmation_code'),r['guest_name'],r['owner_payout'])
         print(len(rows),"récaps, total",round(sum(r['owner_payout'] or 0 for r in rows),2),"€")
@@ -56,9 +59,9 @@ def recaps_cmd(args):
             if n.get('confirmation_code') and n['confirmation_code'] in codes: print("déjà présent :",n['confirmation_code']); continue
             if any(r['checkin']==n['checkin'] and r['guest_name']==n['guest_name'] for r in rows): print("déjà présent :",n['guest_name'],n['checkin']); continue
             rows.append(n); added+=1
-        enc_write(p['recaps'],rows); print(added,"récap(s) ajouté(s),",len(rows),"au total")
+        enc_write(p['recaps'],rows,pin); print(added,"récap(s) ajouté(s),",len(rows),"au total")
     elif sub=='import':
-        rows=json.load(open(args[2])); enc_write(p['recaps'],rows); print(len(rows),"récaps importés")
+        rows=json.load(open(args[2])); enc_write(p['recaps'],rows,pin); print(len(rows),"récaps importés")
     else: sys.exit("sous-commande inconnue")
 
 # ---------- Lodgify ----------
@@ -87,9 +90,9 @@ def lodgify_rows(allb,pid_lodgify):
     rows.sort(key=lambda r:r['checkin']); return rows
 
 # ---------- construction ----------
-def build_property(cfg,lg_rows):
+def build_property(cfg,lg_rows,pin):
     lg=[r for r in lg_rows if r["status"]=="Booked" and r["checkout"]>cfg["since"]]
-    recaps=enc_read(cfg['recaps'],[])
+    recaps=enc_read(cfg['recaps'],pin,[]) if cfg.get('recaps') else []
     bycode={r.get("confirmation_code"):r for r in recaps if r.get("confirmation_code")}
     byci={r["checkin"]:r for r in recaps}
     ical=[];stays=[]
@@ -130,16 +133,21 @@ def build_property(cfg,lg_rows):
     return {k:cfg[k] for k in ("id","name","short","address","platforms","since")}|{"adr":adr,"cap":cfg.get("cap"),"payouts":cfg.get("payouts",True),"ical":ical,"stays":stays,"market":market}
 
 def build_cmd():
-    pin=env('AURORA_PIN'); allb=lodgify_all(); print(len(allb),"réservations Lodgify lues")
+    allb=lodgify_all(); print(len(allb),"réservations Lodgify lues")
     tpl=open(os.path.join(ROOT,'tools','template.html')).read()
     for o in CFG['owners']:
-        props=[build_property(p,lodgify_rows(allb,p['lodgify_property_id'])) for p in o['properties']]
+        pin=owner_pin(o)
+        props=[build_property(p,lodgify_rows(allb,p['lodgify_property_id']),pin) for p in o['properties']]
         data={"owner":o['greeting'],"updated":datetime.date.today().isoformat(),"properties":props}
         salt=os.urandom(16); iv=os.urandom(12); ITER=250000
         key=hashlib.pbkdf2_hmac('sha256',pin.encode(),salt,ITER,dklen=32)
         ct=AESGCM(key).encrypt(iv,json.dumps(data,ensure_ascii=False).encode(),None)
         enc={"salt":base64.b64encode(salt).decode(),"iv":base64.b64encode(iv).decode(),"iter":ITER,"data":base64.b64encode(ct).decode()}
-        open(os.path.join(ROOT,o['output']),'w').write(tpl.replace('__DATA__',json.dumps(enc)))
+        out=os.path.join(ROOT,o['output']); os.makedirs(os.path.dirname(out) or ROOT,exist_ok=True)
+        open(out,'w').write(tpl.replace('__DATA__',json.dumps(enc)))
+        if os.path.dirname(o['output']):  # page dans un sous-dossier : manifeste propre (icône d'accueil ouvre cette page)
+            m=json.load(open(os.path.join(ROOT,'manifest.webmanifest'))); m['icons']=[{**i,"src":"/"+i["src"].lstrip("/")} for i in m['icons']]
+            json.dump(m,open(os.path.join(os.path.dirname(out),'manifest.webmanifest'),'w'),ensure_ascii=False)
         for p in props: print(o['slug'],"/",p['id'],":",len(p['ical']),"réservations,",len(p['stays']),"séjours récapitulés, versements",round(sum(s['owner_payout'] or 0 for s in p['stays']),2),"€")
 
 if __name__=='__main__':

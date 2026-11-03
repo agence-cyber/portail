@@ -18,7 +18,8 @@
      "adr": {
       "30": 257,
       "365": 221
-     }
+     },
+     "pricelabs": "809294___876416"
     },
     {
      "id": "louis",
@@ -35,6 +36,50 @@
       "365": 633
      },
      "cap": 90,
+     "payouts": false,
+     "pricelabs": "649300___716287"
+    }
+   ]
+  },
+  {
+   "slug": "dilli",
+   "greeting": "Marie et Ergün",
+   "output": "dilli/index.html",
+   "properties": [
+    {
+     "id": "lafayette",
+     "name": "Lafayette",
+     "short": "Lafayette",
+     "address": "207 rue La Fayette, Paris 10e · Studio",
+     "platforms": "Booking.com",
+     "since": "2026-02-01",
+     "lodgify_property_id": 762312,
+     "market": null,
+     "adr": null,
+     "payouts": false
+    },
+    {
+     "id": "poissonniere",
+     "name": "Poissonnière",
+     "short": "Poissonnière",
+     "address": "23 rue du Faubourg Poissonnière, Paris 9e · Duplex avec terrasse",
+     "platforms": "Airbnb · Booking.com",
+     "since": "2025-08-01",
+     "lodgify_property_id": 762313,
+     "market": null,
+     "adr": null,
+     "payouts": false
+    },
+    {
+     "id": "duperre",
+     "name": "Duperré",
+     "short": "Duperré",
+     "address": "21 rue Duperré, Paris 9e · Studio",
+     "platforms": "Booking.com",
+     "since": "2026-03-01",
+     "lodgify_property_id": 779687,
+     "market": null,
+     "adr": null,
      "payouts": false
     }
    ]
