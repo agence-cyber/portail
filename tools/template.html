@@ -151,7 +151,7 @@ h3{font-family:var(--serif);font-weight:400;font-size:22px;color:var(--bronze);m
 .it .a{font-family:var(--serif);font-size:26px;color:var(--beige);text-align:right}
 .it .st{font-size:9px;letter-spacing:.12em;text-transform:uppercase;color:var(--fond);background:var(--bronze);border-radius:999px;padding:4px 9px;display:inline-block;margin-top:4px}
 .it .st.up{background:var(--pierre);color:var(--beige)}
-.st.pf{background:var(--abb);color:#fff}.st.pf.bk{background:var(--bkg);color:#fff}
+.st.pf{display:inline-block;font-size:9px;letter-spacing:.12em;text-transform:uppercase;border-radius:999px;padding:4px 9px;background:var(--abb);color:#fff}.st.pf.bk{background:var(--bkg);color:#fff}
 .mth{font-family:var(--serif);font-size:20px;color:var(--beige);margin:18px 0 8px}
 /* report table */
 .tbl{width:100%;border-collapse:collapse;font-size:13px}
@@ -456,9 +456,9 @@ function renderCal(){
       h+=`<div class="wk"><div class="cells">`+wk.map(k=>k?`<div class="d ${bd.has(k)?'b':''} ${k===TODAY?'td':''}"><span>${+k.slice(8)}</span></div>`:'<div class="d o"></div>').join('')+`</div><div class="bars">`;
       const wf=wk.find(x=>x), wl=[...wk].reverse().find(x=>x); if(!wf){h+='</div></div>';continue}
       const wEnd=d2s(new Date(s2d(wl).getTime()+MS));
-      evs.forEach(e=>{if(e.end<=wf||e.start>=wEnd)return;
-        const si=e.start>=wf?wk.indexOf(e.start):0; const startsHere=e.start>=wf;
-        const endsHere=e.end<wEnd; const ei=endsHere?wk.indexOf(e.end):7; // index of checkout day
+      evs.forEach(e=>{if(e.end<wf||e.start>=wEnd)return;
+        const startsHere=e.start>=wf; const si=startsHere?wk.indexOf(e.start):wk.indexOf(wf);
+        const endsHere=e.end<wEnd; const ei=endsHere?wk.indexOf(e.end):wk.indexOf(wl)+1; // index of checkout day
         const cw=100/7; const left=si*cw+(startsHere?cw/2:0); const right=endsHere?ei*cw+cw/2:100;
         const past=e.end<=TODAY, bk=/booking/i.test(e.platform||'');
         h+=`<button class="bar ${bk?'bk':''} ${past?'past':''} ${startsHere?'':'cl'} ${endsHere?'':'cr'}" style="left:calc(${left}% + ${startsHere?2:0}px);width:calc(${right-left}% - ${(startsHere?2:0)+(endsHere?3:0)}px)" onclick="openEvent('${p.id}','${e.start}')" title="${guestLabel(e)}">${guestLabel(e)}</button>`;});
@@ -490,7 +490,7 @@ function renderTimeline(){
   const end=d2s(new Date(d0.getTime()+N*MS));
   let names=`<div class="hd">Bien</div>`, rows='';
   DATA.properties.forEach(p=>{names+=`<div>${p.short}</div>`;let bars='';
-    p.ical.filter(e=>e.end>TL0&&e.start<end).forEach(e=>{const s=Math.max(0,nights(TL0,e.start)),en=Math.min(N,nights(TL0,e.end));const left=s*W+(e.start>=TL0?W/2:0),width=(en-s)*W-(e.start>=TL0?W/2:0)-(e.end<=end?W/2:0);
+    p.ical.filter(e=>e.end>=TL0&&e.start<end).forEach(e=>{const s=Math.max(0,nights(TL0,e.start)),en=Math.min(N,nights(TL0,e.end));const endsHere=e.end<end;const left=s*W+(e.start>=TL0?W/2:0),width=(en-s)*W+(endsHere?W/2:0)-(e.start>=TL0?W/2:0);
       const cls=e.end<=TODAY?'past':(/booking/i.test(e.platform||'')?'bk':'');const now=e.start<=TODAY&&e.end>TODAY;
       bars+=`<button class="tlbar ${cls} ${now?'now':''}" style="left:${left+2}px;width:${Math.max(width-4,12)}px" onclick="openEvent('${p.id}','${e.start}')" title="${guestLabel(e)}">${width<90?guestLabel(e).split(' ')[0]:guestLabel(e)}</button>`;});
     rows+=`<div class="tlrow" style="width:${N*W}px">${bars}</div>`;});
