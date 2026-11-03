@@ -137,7 +137,7 @@ h3{font-family:var(--serif);font-weight:400;font-size:22px;color:var(--bronze);m
 .tldays div.td b{display:inline-block;background:var(--bronze);border-radius:999px;width:22px;height:22px;line-height:22px;font-weight:500}
 .tlrow{position:relative;height:48px;box-sizing:border-box;border-top:1px solid var(--sable);background:repeating-linear-gradient(90deg,transparent 0 39px,var(--brume) 39px 40px)}
 .tlbar{position:absolute;top:8px;height:32px;border-radius:999px;background:#FFFFFF;border:1.5px solid var(--abb);color:#2C2B2B;font-size:11px;font-weight:500;line-height:32px;padding:0 10px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;border:0;text-align:left}
-.tlbar.bk{border-color:var(--bkg)}
+.tlbar{padding-left:30px}.tlbar::before{content:"";position:absolute;left:4px;top:4px;width:20px;height:20px;border-radius:50%;background:var(--abb)}.tlbar.bk{border-color:var(--bkg)}.tlbar.bk::before{background:var(--bkg)}.tlbar.now::before{top:3px;left:3px}
 .tlbar.past{opacity:.7}
 .tlbar.now{border-width:2.5px;line-height:30px}
 .tlmonths{position:relative;height:18px}
@@ -151,6 +151,7 @@ h3{font-family:var(--serif);font-weight:400;font-size:22px;color:var(--bronze);m
 .it .a{font-family:var(--serif);font-size:26px;color:var(--beige);text-align:right}
 .it .st{font-size:9px;letter-spacing:.12em;text-transform:uppercase;color:var(--fond);background:var(--bronze);border-radius:999px;padding:4px 9px;display:inline-block;margin-top:4px}
 .it .st.up{background:var(--pierre);color:var(--beige)}
+.st.pf{background:var(--abb);color:#fff}.st.pf.bk{background:var(--bkg);color:#fff}
 .mth{font-family:var(--serif);font-size:20px;color:var(--beige);margin:18px 0 8px}
 /* report table */
 .tbl{width:100%;border-collapse:collapse;font-size:13px}
@@ -465,7 +466,7 @@ function renderCal(){
   }
   if(calSel!=='all'){const p=P(calSel);const inM=p.ical.filter(e=>e.start<t&&e.end>f).sort((a,b)=>a.start<b.start?-1:1);
     h+=`<div style="margin-top:14px;border-top:1px solid var(--sable);padding-top:6px">`+inM.map(e=>{const nm=e.guest||guestLabel(e);const st=e.end<=TODAY?'past':(e.start<=TODAY?'now':'up');
-      return `<div onclick="openEvent('${p.id}','${e.start}')" style="display:grid;grid-template-columns:auto 1fr auto;gap:10px;align-items:center;padding:9px 0;border-bottom:1px solid var(--sable);font-size:13px;cursor:pointer"><i style="width:10px;height:10px;border-radius:3px;border-radius:50%;opacity:${st==='past'?'.5':'1'};background:${/booking/i.test(e.platform||'')?'var(--bkg)':'var(--abb)'}"></i><span><b style="font-weight:500">${nm}</b><br><span class="cap">${fdate(e.start)} → ${fdate(e.end)} · ${nights(e.start,e.end)} nuit${nights(e.start,e.end)>1?'s':''}${e.guests?' · '+e.guests+' voy.':''}</span></span><span class="st ${st==='past'?'up':''}" style="font-size:9px;letter-spacing:.12em;text-transform:uppercase;border-radius:999px;padding:4px 9px;background:${st==='past'?'var(--sable)':'var(--bronze)'};color:${st==='past'?'var(--noyer)':'#fff'}">${e.platform||'Airbnb'}</span></div>`}).join('')+`</div>`;}
+      return `<div onclick="openEvent('${p.id}','${e.start}')" style="display:grid;grid-template-columns:auto 1fr auto;gap:10px;align-items:center;padding:9px 0;border-bottom:1px solid var(--sable);font-size:13px;cursor:pointer"><i style="width:10px;height:10px;border-radius:3px;border-radius:50%;opacity:${st==='past'?'.5':'1'};background:${/booking/i.test(e.platform||'')?'var(--bkg)':'var(--abb)'}"></i><span><b style="font-weight:500">${nm}</b><br><span class="cap">${fdate(e.start)} → ${fdate(e.end)} · ${nights(e.start,e.end)} nuit${nights(e.start,e.end)>1?'s':''}${e.guests?' · '+e.guests+' voy.':''}</span></span><span class="st pf ${/booking/i.test(e.platform||'')?'bk':''}" style="opacity:${st==='past'?'.6':'1'}">${e.platform||'Airbnb'}</span></div>`}).join('')+`</div>`;}
   box.innerHTML=h;
   document.getElementById('cprev').onclick=()=>{calMonth=new Date(Date.UTC(calMonth.getUTCFullYear(),calMonth.getUTCMonth()-1,1));renderCal()};
   document.getElementById('cnext').onclick=()=>{calMonth=nxt;renderCal()};
@@ -474,7 +475,7 @@ function renderCal(){
   props.forEach(p=>p.ical.filter(e=>e.end>TODAY).forEach(e=>up.push({p,e})));
   up.sort((a,b)=>a.e.start<b.e.start?-1:1);
   document.getElementById('upcoming').innerHTML=up.slice(0,8).map(({p,e})=>{const nm=guestLabel(e);const now=e.start<=TODAY;
-    return `<button class="it" onclick="openEvent('${p.id}','${e.start}')"><div><div class="g">${nm}</div><div class="m">${fdate(e.start)} → ${fdateY(e.end)} · ${nights(e.start,e.end)} nuits${e.guests?' · '+e.guests+' voyageur'+(e.guests>1?'s':''):''}${DATA.properties.length>1?' · '+p.short:''}</div></div><div style="text-align:right"><span class="st">${e.platform||'Airbnb'}</span><br><span class="st up">${now?'En cours':'À venir'}</span></div></button>`}).join('')||'<p class="cap">Aucune arrivée prévue.</p>';
+    return `<button class="it" onclick="openEvent('${p.id}','${e.start}')"><div><div class="g">${nm}</div><div class="m">${fdate(e.start)} → ${fdateY(e.end)} · ${nights(e.start,e.end)} nuits${e.guests?' · '+e.guests+' voyageur'+(e.guests>1?'s':''):''}${DATA.properties.length>1?' · '+p.short:''}</div></div><div style="text-align:right"><span class="st pf ${/booking/i.test(e.platform||'')?'bk':''}">${e.platform||'Airbnb'}</span><br><span class="st up">${now?'En cours':'À venir'}</span></div></button>`}).join('')||'<p class="cap">Aucune arrivée prévue.</p>';
 }
 
 let TL0=null; // premier jour affiché
@@ -501,7 +502,7 @@ function renderTimeline(){
   document.getElementById('ttoday').onclick=()=>{TL0=TODAY;renderTimeline()};
   // prochaines arrivées (tous biens)
   const up=[];DATA.properties.forEach(p=>p.ical.filter(e=>e.end>TODAY).forEach(e=>up.push({p,e})));up.sort((a,b)=>a.e.start<b.e.start?-1:1);
-  document.getElementById('upcoming').innerHTML=up.slice(0,8).map(({p,e})=>{const now=e.start<=TODAY;return `<button class="it" onclick="openEvent('${p.id}','${e.start}')"><div><div class="g">${guestLabel(e)}</div><div class="m">${fdate(e.start)} → ${fdateY(e.end)} · ${nights(e.start,e.end)} nuits${e.guests?' · '+e.guests+' voyageur'+(e.guests>1?'s':''):''} · ${p.short}</div></div><div style="text-align:right"><span class="st">${e.platform||'Airbnb'}</span><br><span class="st up">${now?'En cours':'À venir'}</span></div></button>`}).join('');
+  document.getElementById('upcoming').innerHTML=up.slice(0,8).map(({p,e})=>{const now=e.start<=TODAY;return `<button class="it" onclick="openEvent('${p.id}','${e.start}')"><div><div class="g">${guestLabel(e)}</div><div class="m">${fdate(e.start)} → ${fdateY(e.end)} · ${nights(e.start,e.end)} nuits${e.guests?' · '+e.guests+' voyageur'+(e.guests>1?'s':''):''} · ${p.short}</div></div><div style="text-align:right"><span class="st pf ${/booking/i.test(e.platform||'')?'bk':''}">${e.platform||'Airbnb'}</span><br><span class="st up">${now?'En cours':'À venir'}</span></div></button>`}).join('');
 }
 /* ---------- recaps ---------- */
 function renderRecaps(){
@@ -509,7 +510,7 @@ function renderRecaps(){
   all.sort((a,b)=>a.s.checkout<b.s.checkout?1:-1);
   let h='',lastM='';
   all.forEach(({p,s},i)=>{const d=s2d(s.checkout);const m=MOIS[d.getUTCMonth()].replace(/^./,c=>c.toUpperCase())+' '+d.getUTCFullYear();if(m!==lastM){h+=`<div class="mth">${m}</div>`;lastM=m}
-    h+=`<button class="it" onclick="openStay('${p.id}','${s.code}')"><div><div class="g">${s.guest}</div><div class="m">${fdate(s.checkin)} → ${fdateY(s.checkout)} · ${s.nights} nuit${s.nights>1?'s':''}${s.guests?' · '+s.guests+' voyageur'+(s.guests>1?'s':''):''}${DATA.properties.length>1?' · '+p.short:''}</div></div><div><div class="a">${s.owner_payout!=null?eur(s.owner_payout):(s.host_gross!=null?eur(s.host_gross):'–')}</div><span class="st">${s.platform||'Airbnb'}</span>${s.owner_payout==null?'<div class="cap" style="font-size:9px;letter-spacing:.1em;text-transform:uppercase;margin-top:4px;text-align:right">brut</div>':''}</div></button>`;});
+    h+=`<button class="it" onclick="openStay('${p.id}','${s.code}')"><div><div class="g">${s.guest}</div><div class="m">${fdate(s.checkin)} → ${fdateY(s.checkout)} · ${s.nights} nuit${s.nights>1?'s':''}${s.guests?' · '+s.guests+' voyageur'+(s.guests>1?'s':''):''}${DATA.properties.length>1?' · '+p.short:''}</div></div><div><div class="a">${s.owner_payout!=null?eur(s.owner_payout):(s.host_gross!=null?eur(s.host_gross):'–')}</div><span class="st pf ${/booking/i.test(s.platform||'')?'bk':''}">${s.platform||'Airbnb'}</span>${s.owner_payout==null?'<div class="cap" style="font-size:9px;letter-spacing:.1em;text-transform:uppercase;margin-top:4px;text-align:right">brut</div>':''}</div></button>`;});
   document.getElementById('recaps').innerHTML=h||'<p class="cap">Aucun séjour terminé pour le moment.</p>';
 }
 function openStay(pid,code){
