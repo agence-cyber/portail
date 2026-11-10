@@ -10,6 +10,9 @@ Commandes :
   python tools/portail.py recaps list   <bien>              liste les récaps enregistrés
   python tools/portail.py recaps add    <bien> '<json>'     ajoute un récap (objet ou liste), dédoublonné par code
   python tools/portail.py recaps import <bien> <fichier>    importe un fichier JSON de récaps (remplace)
+  python tools/portail.py tripcom list   <bien>              réservations Trip.com enregistrées (hors Lodgify)
+  python tools/portail.py tripcom add    <bien> '<json>'     ajoute une réservation Trip.com (objet ou liste), dédoublonnée par code
+  python tools/portail.py tripcom cancel <bien> <code>       marque une réservation Trip.com annulée (retirée du portail)
   python tools/portail.py build                              télécharge Lodgify, reconstruit les pages
 """
 import json, os, sys, base64, hashlib, datetime, subprocess
@@ -69,8 +72,13 @@ def lodgify_all():
     K=env('LODGIFY_KEY'); allb=[]; page=1
     while True:
         url=f"https://api.lodgify.com/v2/reservations/bookings?stayFilter=All&includeExternal=true&includeTransactions=false&page={page}&size=100"
-        out=subprocess.run(['curl','-s','--max-time','60','-H',f'X-ApiKey: {K}',url],capture_output=True,text=True).stdout
-        d=json.loads(out); items=d.get('items',[])
+        d=None
+        for attempt in range(4):  # Lodgify renvoie parfois une page vide ou une erreur passagère : on réessaie
+            out=subprocess.run(['curl','-s','--max-time','60','-H',f'X-ApiKey: {K}',url],capture_output=True,text=True).stdout
+            try: d=json.loads(out); break
+            except Exception: import time; time.sleep(3*(attempt+1))
+        if d is None: sys.exit(f"Lodgify injoignable (page {page}) : {out[:200]}")
+        items=d.get('items',[])
         if not items: break
         allb+=items; page+=1
         if page>400: break
@@ -89,8 +97,35 @@ def lodgify_rows(allb,pid_lodgify):
             "guests":(x['rooms'][0].get('people') if x.get('rooms') else None),"code":code,"booked_at":x.get('created_at')})
     rows.sort(key=lambda r:r['checkin']); return rows
 
+# ---------- Trip.com (réservations reçues par e-mail, absentes de Lodgify) ----------
+def tripcom_path(cfg): return cfg.get('tripcom') or f"data/tripcom-{cfg['id']}.enc"
+def tripcom_cmd(args):
+    sub,pid=args[0],args[1]; o,p=prop(pid); pin=owner_pin(o); path=tripcom_path(p); rows=enc_read(path,pin,[])
+    if sub=='list':
+        for r in sorted(rows,key=lambda r:r['checkin']): print(r['status'],r['checkin'],r['checkout'],r['code'],r['guest'],r.get('stay'))
+        print(len(rows),"réservations Trip.com,",sum(1 for r in rows if r['status']=='Booked'),"actives")
+    elif sub=='add':
+        new=json.loads(args[2]); new=new if isinstance(new,list) else [new]; codes={r['code'] for r in rows}; added=0
+        for n in new:
+            for f in ('code','guest','checkin','checkout'):
+                if f not in n: sys.exit(f"champ manquant : {f}")
+            if n['code'] in codes: print("déjà présent :",n['code']); continue
+            rows.append({"code":str(n['code']),"guest":n['guest'],"checkin":n['checkin'],"checkout":n['checkout'],"guests":n.get('guests'),
+                         "stay":n.get('stay'),"total":n.get('total'),"status":"Booked","booked_at":n.get('booked_at')}); added+=1
+        enc_write(path,rows,pin); print(added,"réservation(s) ajoutée(s),",len(rows),"au total")
+    elif sub=='cancel':
+        code=str(args[2]); hit=[r for r in rows if r['code']==code]
+        if not hit: sys.exit(f"code inconnu : {code}")
+        for r in hit: r['status']='Cancelled'
+        enc_write(path,rows,pin); print("annulée :",code,hit[0]['guest'],hit[0]['checkin'])
+    else: sys.exit(__doc__)
+
 # ---------- construction ----------
 def build_property(cfg,lg_rows,pin):
+    tc=enc_read(tripcom_path(cfg),pin,[])
+    lg_rows=list(lg_rows)+[{"checkin":r["checkin"],"checkout":r["checkout"],"status":r["status"],"guest":r["guest"],"platform":"Trip.com",
+        "stay":r.get("stay"),"total":r.get("total"),"guests":r.get("guests"),"code":r["code"],"booked_at":r.get("booked_at")} for r in tc]
+    lg_rows.sort(key=lambda r:r['checkin'])
     lg=[r for r in lg_rows if r["status"]=="Booked" and r["checkout"]>cfg["since"]]
     recaps=enc_read(cfg['recaps'],pin,[]) if cfg.get('recaps') else []
     bycode={r.get("confirmation_code"):r for r in recaps if r.get("confirmation_code")}
@@ -154,5 +189,6 @@ if __name__=='__main__':
     a=sys.argv[1:]
     if not a: sys.exit(__doc__)
     if a[0]=='recaps': recaps_cmd(a[1:])
+    elif a[0]=='tripcom': tripcom_cmd(a[1:])
     elif a[0]=='build': build_cmd()
     else: sys.exit(__doc__)
