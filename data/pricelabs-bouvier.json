@@ -1,1 +1,1 @@
-{"updated": "2026-11-20", "adr": {"30": 250, "365": 222}, "market": [{"l": "30 derniers jours", "v": 53, "m": 73}, {"l": "90 derniers jours", "v": 76, "m": 77}, {"l": "30 prochains jours", "v": 30, "m": 44}, {"l": "90 prochains jours", "v": 20, "m": 30}]}
+{"updated":"2026-11-21","adr":{"30":249,"365":222},"market":[{"l":"30 derniers jours","v":53,"m":72},{"l":"90 derniers jours","v":76,"m":77},{"l":"30 prochains jours","v":30,"m":43},{"l":"90 prochains jours","v":19,"m":29}]}
